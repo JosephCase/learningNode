@@ -1,6 +1,7 @@
 var querystring = require("querystring"),
 	fs = require("fs"),
-	formidable = require("formidable");
+	formidable = require("formidable"),
+	customFunction = require("./customFunction");
 
 function start(response) {
 	console.log("Request handler 'start' was called.");
@@ -22,17 +23,26 @@ function upload(response, request) {
 	console.log("About to parse");
 	form.parse(request, function(error, fields, files) {
 		console.log("parsing done");
+		if(error) {
+			console.log(error);
+		} else if (customFunction.isEmpty(files)) {			
+			response.writeHead(404, {"Content-Type": "text/plain"});
+			response.write("404 Not found");
+			response.end();
+		} else {
+			fs.rename(files.upload.path, "tmp/test.jpg", function(err) {
+				if (err) {
+					fs.unlink("tmp/test.jpg");
+					fs.rename(files.upload.path, "tmp/test.jpg");
+				}
+			});
+			response.writeHead(200, {"Content-Type": "text/html"});
+			response.write("received image:<br/>");
+			response.write("<img src='/show' />");
+			response.end();
+		}
 
-		fs.rename(files.upload.path, "tmp/test.jpg", function(err) {
-			if (err) {
-				fs.unlink("tmp/test.jpg");
-				fs.rename(files.upload.path, "tmp/test.jpg");
-			}
-		});
-		response.writeHead(200, {"Content-Type": "text/html"});
-		response.write("received image:<br/>");
-		response.write("<img src='/show' />");
-		response.end();
+
 	});
 }
 
